@@ -1,0 +1,15 @@
+.DS_Store
+__pycache__
+all_invoices.xlsx
+check_invoices.xlsx
+basware
+flow
+getapprover.py
+gfis
+gfisdata.py
+invcheker.py
+merger.py
+status_writer.py
+untitled folder
+venv
+.idea
