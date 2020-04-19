@@ -182,7 +182,7 @@ if __name__ == '__main__':
             all_invoices = load_workbook(filename='all_invoices.xlsx')
             allinv_sheet = all_invoices.active
         except FileNotFoundError:
-            print('Code Error 3. Cannot find <check_invoices.xlsx> file. Please read instructions and try again.')
+            print('Cannot find <check_invoices.xlsx> file. Please read instructions and try again.')
             input('Press any key to exit')
             exit()
         else:
@@ -193,7 +193,7 @@ if __name__ == '__main__':
             all_inv = {key: value for (key, value) in zip(all_inv_nr, all_inv_st)}
             inv_status()
             write_status()
-            input('Statuses has been added to check_invoices.xlsx! Press any key to exit')
+            input('Statuses have been added to check_invoices.xlsx! Press any key to exit')
             exit()
 
 
