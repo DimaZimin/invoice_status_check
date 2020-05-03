@@ -5,17 +5,20 @@ import glob
 import codecs
 
 
-def decoding():
-    for file in glob.glob('basware/*.csv'):
-        with open(file, encoding='UTF-16LE') as inp_f:
-            with codecs.open(f'basware/{file.split("/")[1].split(".")[0]}'+'dec.csv', 'w', encoding='utf-8') as out_f:
-                shutil.copyfileobj(inp_f, out_f)
+def decode_basware_files():  # TODO: delete if not needed
+    for path in glob.glob('basware/*.csv'):
+        with open(path, encoding='UTF-16LE') as original_file:
+            new_name = path.replace('.csv', 'dec.csv')
+            with codecs.open(new_name, 'w', encoding='utf-8') as new_file:
+                shutil.copyfileobj(original_file, new_file)
 
 
-def combine_to_excel():
-    all_data = pd.DataFrame()
-    for f in glob.glob('basware/*dec.csv'):
-        df = pd.read_csv(f, sep='\t')
-        all_data = all_data.append(df, ignore_index=True)
-        os.remove(f)
-    all_data.to_excel('all_invoices.xlsx', index=False)
+def read_file(path):
+    with open(path, encoding='UTF-16LE') as f:
+        return pd.read_csv(f, sep='\t')
+
+
+def combine_to_excel(input_directory: str, output_file: str) -> None:
+    parsed = [read_file(path) for path in glob.glob(f'{input_directory}/*.csv')]
+    merged = pd.concat(parsed)
+    merged.to_excel(output_file, index=False)

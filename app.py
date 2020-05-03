@@ -1,9 +1,12 @@
-from invfnd.bswr import decoding, combine_to_excel
-from invfnd.gfs import remove_row, retrieve_invoice_data, gfis_data
-from invfnd.flw import decoding_flow, combine_to_excel_flow
+from bswr import decode_basware_files, combine_to_excel
+from gfs import remove_row, retrieve_invoice_data, gfis_data
+from flw import decoding_flow, combine_to_excel_flow
 import glob
+import openpyxl
 from openpyxl import load_workbook
 import os
+from typing import List
+
 
 bw_statuses = {'R1': 'Returned', 'C1': 'Cancelled',
                '20': 'Unprocessed E-invoice', '4': 'Cancelled Invoices',
@@ -29,22 +32,21 @@ def inv_status():
             inv_basware_status[inv] = 'Missing'
 
 
-def write_status():
+def write_status(invoice_file):
     for i, (k, v) in enumerate(inv_basware_status.items()):
+        invoice_sheet = invoice_file.active
         try:
             if v == bw_statuses['1']:
-                statcheck_sheet[f'B{i + 2}'] = f'{v} to {get_approver(k)[0]} on {get_approver(k)[1]}'
-                check_invoices.save(filename='check_invoices.xlsx')
+                invoice_sheet[f'B{i + 2}'] = f'{v} to {get_approver(k)[0]} on {get_approver(k)[1]}'
             elif v == bw_statuses['3']:
-                statcheck_sheet[f'B{i + 2}'] = f'{v}'
-                statcheck_sheet[f'C{i + 2}'] = f'NO DATA IN GFIS'
-                check_invoices.save(filename='check_invoices.xlsx')
+                invoice_sheet[f'B{i + 2}'] = f'{v}'
+                invoice_sheet[f'C{i + 2}'] = f'NO DATA IN GFIS'
             else:
-                statcheck_sheet[f'B{i + 2}'] = f'{v}'
-                check_invoices.save(filename='check_invoices.xlsx')
+                invoice_sheet[f'B{i + 2}'] = f'{v}'
+            invoice_file.save(filename='check_invoices.xlsx')
         except TypeError and KeyError:
-            statcheck_sheet[f'B{i + 2}'] = f'{v}'
-            statcheck_sheet[f'C{i + 2}'] = 'Data is missing. Please check manually. '
+            invoice_sheet[f'B{i + 2}'] = f'{v}'
+            invoice_sheet[f'C{i + 2}'] = 'Data is missing. Please check manually. '
 
 
 def remove_temporary_files():
@@ -55,6 +57,17 @@ def remove_temporary_files():
         print('Nothing to remove.')
 
 
+def load_invoices(invoice_file: openpyxl.workbook.Workbook) -> List[str]:
+    """
+    Loads first column in first sheet into a list.
+    """
+    invoice_sheet = invoice_file.active
+    return [
+        str(row[0]) for row in
+        invoice_sheet.iter_rows(min_row=2, min_col=1, max_col=1, values_only=True)
+    ]
+
+
 if __name__ == '__main__':
     print('################### Basware/GFIS invoice status checking.##########################')
     print('============== Copyright © 2020 Dmytro Zimin. All Rights Reserved. ============')
@@ -63,33 +76,20 @@ if __name__ == '__main__':
     run = input('To proceed press <y> or any other button to exit\n')
     if run.lower()[0] == 'y':
         try:
-            check_invoices = load_workbook(filename='check_invoices.xlsx')
-            statcheck_sheet = check_invoices.active
+            invoice_file = load_workbook(filename='check_invoices.xlsx')
         except FileNotFoundError:
             print('Unable to find <check_invoices.xlsx> in root directory')
             input('Press any key to exit')
             exit()
         else:
-            requested_invoices = [str(inum[0]) for inum in
-                                  statcheck_sheet.iter_rows(min_row=2, min_col=1, max_col=1, values_only=True)]
-        print('Encoding files...')
-        try:
-            decoding()
-        except FileNotFoundError:
-            print('Unable to find *.csv files in <basware> directory')
-            input('Press any key to exit')
-            exit()
-        else:
-            print('Encoding completed...')
+            requested_invoices = load_invoices(invoice_file)
+
         print('Merging files...')
-        combine_to_excel()
+        combine_to_excel(input_directory='basware', output_file='all_invoices.xlsx')
         print('Merging files completed!')
         remove_row()
-        print('Encoding flow files...')
-        decoding_flow()
-        print('Encoding completed')
         print('Rewriting <flow> to .xlsx')
-        combine_to_excel_flow()
+        combine_to_excel(input_directory='flow', output_file='flow/all_invoices.xlsx')
         try:
             print('Retrieving invoice data. Please wait...')
             path_file_flow = glob.glob('flow/*.xlsx')[0]
@@ -101,7 +101,7 @@ if __name__ == '__main__':
             exit()
         else:
             approvers = [str(approver[0]) for approver in
-                         inflow_sheet.iter_rows(min_row=2, min_col=13, max_col=13, values_only=True)]
+                         inflow_sheet.iter_rows(min_row=2, min_col=13, max_col=13, values_only=True)]  # TODO: wrap into function, get rid of magic constants
             flow_inv = [str(inv[0]) for inv in
                         inflow_sheet.iter_rows(min_row=2, min_col=7, max_col=7, values_only=True)]
             date_sent = [dt[0].split(' ')[0] for dt in
@@ -122,7 +122,7 @@ if __name__ == '__main__':
             all_inv = {key: value for (key, value) in zip(all_inv_nr, all_inv_st)}
             inv_status()
             print('Updating <check_invoices.xlsx>...')
-            write_status()
+            write_status(invoice_file)
             print('Updated!')
             print('Removing temporary files...')
             remove_temporary_files()
