@@ -19,3 +19,5 @@ def combine_to_excel():
         all_data = all_data.append(df, ignore_index=True)
         os.remove(f)
     all_data.to_excel('all_invoices.xlsx', index=False)
+
+
