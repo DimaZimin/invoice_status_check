@@ -8,7 +8,6 @@ gfis
 untitled folder
 venv
 .idea
-functions.py
 filecodec.py
 app_old.py
 bswr.py
@@ -16,3 +15,4 @@ checker.py
 flw.py
 gfs.py
 test.py
+git remote add origin [//your github url]

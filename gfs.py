@@ -4,14 +4,16 @@ from datetime import datetime
 
 gfis_data = {}
 
+# TODO: remove whole file?
+
 
 def remove_row():
     for file in glob.glob('gfis/*.xlsx'):
         gfis_excel = load_workbook(filename=f'{file}')
         gfis_sheet = gfis_excel.active
-        for col in gfis_sheet.iter_rows(max_row=1, values_only=True):
+        for row in gfis_sheet.iter_rows(max_row=1, values_only=True):
             print('Checking GFIS files...')
-            if None in col:
+            if None in row:
                 print(f'File: {file} - 1st row has been deleted')
                 gfis_sheet.delete_rows(1)
                 gfis_excel.save(file)
